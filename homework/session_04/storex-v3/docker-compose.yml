@@ -1,0 +1,44 @@
+services:
+  backend:
+    build: /home/bao/user-service      # image storex-backend:v3 khong co san -> build tu ma nguon
+    image: storex-backend:v3
+    ports:
+      - "8080:8080"                    # chi backend duoc publish ra ngoai
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      # Bien cho Spring Boot (user-service doc cac bien nay)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - storex-net
+
+  postgres:
+    image: postgres:13
+    # Da xoa "ports: 5432:5432" -> host khong truy cap truc tiep duoc DB
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - storex-net
+
+networks:
+  storex-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
